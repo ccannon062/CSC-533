@@ -46,6 +46,9 @@ public class TokenStream {
 	            	while (index < this.buffer.length() && this.buffer.charAt(index) != '"') {
 	            		index++;
 	            	}
+	            	if (index >= this.buffer.length()) {
+	                    throw new Exception("SYNTAX ERROR: Malformed string literal.");
+	                }
 	            	index++;
 	            }
 	            else if (this.buffer.charAt(0) == '\'') {

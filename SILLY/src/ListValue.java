@@ -3,7 +3,7 @@ import java.util.ArrayList;
 
 /**
  * Class that represents a list value.
- *   @author Dave Reed
+ *   @author Dave Reed modified by Caleb Cannon
  *   @version 1/20/25
  */
 public class ListValue implements DataValue {
@@ -50,6 +50,14 @@ public class ListValue implements DataValue {
     public String toString() {
     	String message = "[";
     	for (DataValue v : this.value) {
+    		if(v.getType() == DataValue.Type.CHAR) {
+    			message += "'" + v + "' ";
+    			continue;
+    		}
+    		else if(v.getType() == DataValue.Type.STRING) {
+    			message += "\"" + v + "\" ";
+    		    continue;
+    		}
     		message += v + " ";
     	}
         return message.trim() + "]";

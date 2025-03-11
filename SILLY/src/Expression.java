@@ -3,7 +3,7 @@ import java.util.ArrayList;
 /**
  * Class that represents an expression in the SILLY language.
  *   @author Dave Reed modified by Caleb Cannon
- *   @version 1/20/25
+ *   @version 2/20/25
  */
 public class Expression {
     private Token tok;					     // used for simple expressions (no function)
@@ -39,7 +39,8 @@ public class Expression {
     	else if (this.tok.getType() != Token.Type.IDENTIFIER &&
                 this.tok.getType() != Token.Type.NUM_LITERAL &&    
                 this.tok.getType() != Token.Type.BOOL_LITERAL &&
-                this.tok.getType() != Token.Type.CHAR_LITERAL) {
+                this.tok.getType() != Token.Type.CHAR_LITERAL &&
+                this.tok.getType() != Token.Type.STR_LITERAL) {
           throw new Exception("SYNTAX ERROR: Unknown value (" + this.tok + ").");
     	}
     }
@@ -61,6 +62,9 @@ public class Expression {
                 return new BooleanValue(Boolean.valueOf(this.tok.toString()));
             } else if (this.tok.getType() == Token.Type.CHAR_LITERAL) {
                 return new CharValue(Character.valueOf(this.tok.toString().charAt(1)));
+            } else if (this.tok.getType() == Token.Type.STR_LITERAL) {
+            	String str = this.tok.toString().substring(1, this.tok.toString().length() - 1);
+            	return new StringValue(str);
             }
         } 
         else if (this.tok.toString().equals("[")) {
@@ -113,6 +117,9 @@ public class Expression {
 	    			throw new Exception("RUNTIME ERROR: Incorrect arity in comparison expression.");
 	    		}
 	        	if(this.tok.toString().equals("and")) {
+	        		if (this.exprs.size() < 2) {
+	        		    throw new Exception("RUNTIME ERROR: Incorrect arity in boolean expression.");
+	        		}
 	        		for(int i = 0; i < this.exprs.size(); i++) {
 	        			if(this.exprs.get(i).evaluate().getType() != DataValue.Type.BOOLEAN) {
 	        				throw new Exception("RUNTIME ERROR: Type mismatch - 'and' operator requires boolean operands");
@@ -123,6 +130,9 @@ public class Expression {
 	        		}
 	        		return new BooleanValue(true);
 	        	} else if(this.tok.toString().equals("or")) {
+	        		if (this.exprs.size() < 2) {
+        			    throw new Exception("RUNTIME ERROR: Incorrect arity in boolean expression.");
+        			}
 	        		for(int i = 0; i < this.exprs.size(); i++) {
 	        			if(this.exprs.get(i).evaluate().getType() != DataValue.Type.BOOLEAN) {
 	        				throw new Exception("RUNTIME ERROR: Type mismatch - 'or' operator requires boolean operands");
@@ -153,13 +163,19 @@ public class Expression {
 	        else if (this.tok.getType() == Token.Type.SEQ_FUNC) {
 	        	if (this.exprs.size() == 0) {
 	        		throw new Exception("RUNTIME ERROR: Incorrect arity in sequence expression.");
-	        	}	        	
+	        	}	
+	            if (this.tok.toString().equals("str")) {
+	                if (this.exprs.size() != 1) {
+	                    throw new Exception("RUNTIME ERROR: Incorrect arity in str expression.");
+	                }
+	                DataValue val = this.exprs.get(0).evaluate();
+	                return new StringValue(val.toString());
+	            }
 	        	DataValue first = this.exprs.get(0).evaluate();	       
-	        	if (first.getType() != DataValue.Type.LIST) {
-	        		throw new Exception("RUNTIME ERROR: List value expected.");
-	        	}	    
+	        	if (first.getType() != DataValue.Type.LIST && first.getType() != DataValue.Type.STRING) {
+	        	    throw new Exception("RUNTIME ERROR: List or String value expected.");
+	        	}    
 	        	ArrayList<DataValue> list = (ArrayList<DataValue>)first.getValue();
-	        	
 	        	if (this.tok.toString().equals("len")) {
 	        		if (this.exprs.size() != 1) {
 	        			throw new Exception("RUNTIME ERROR: Incorrect arity in len expression.");
@@ -187,15 +203,26 @@ public class Expression {
 	        	else if (this.tok.toString().equals("cat")) {
 	        		if (this.exprs.size() < 2) {
 	        			throw new Exception("RUNTIME ERROR: Incorrect arity in cat expression.");
-	        		}	        		        		
+	        		}	
+	        		if (first.getType() != DataValue.Type.LIST && first.getType() != DataValue.Type.STRING) {
+	        	        throw new Exception("RUNTIME ERROR: List or String value expected.");
+	        	    }
 	        		for (int i = 1; i < this.exprs.size(); i++) {
 	        			DataValue val = this.exprs.get(i).evaluate();
-	        			if (val.getType() != DataValue.Type.LIST) {
+	        			if (val.getType() != DataValue.Type.LIST && val.getType() != DataValue.Type.STRING) {
 	        				throw new Exception("RUNTIME ERROR: Type mismatch in cat expression.");
 	        			} 
 	        			list.addAll((ArrayList<DataValue>)val.getValue());	        				
-	        		}	        		
-	        		return new ListValue(list);
+	        		}
+	        		if(first.getType() == DataValue.Type.LIST) {
+	        			return new ListValue(list);
+	        		} else {
+	        			String returnString = "";
+		        		for(DataValue v: list) {
+		        			returnString += v.getValue();
+		        		}
+		        		return new StringValue(returnString);
+	        		}
 	        	}
 	        }
         }
